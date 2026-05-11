@@ -176,7 +176,9 @@ label.lbl{display:block;font-size:11px;color:var(--t2);margin-bottom:4px;text-tr
     </div>
     <div id="set-key-status" style="font-size:12px;color:var(--accent);margin-bottom:8px;display:none"></div>
     <button class="btn btn-g" onclick="saveSettings()" style="margin-bottom:8px">💾 Save API Key</button>
-    <button class="btn btn-o" style="font-size:13px" onclick="toggleSettings()">✕ Close</button>
+    <button class="btn btn-o" style="font-size:13px;margin-bottom:8px" onclick="testApiKey()">🔍 Test API Key</button>
+    <div id="api-test-result" style="display:none;border-radius:8px;padding:10px;font-size:12px;line-height:1.8;background:var(--card2);border:1px solid var(--b)"></div>
+    <button class="btn btn-o" style="font-size:13px;margin-top:8px" onclick="toggleSettings()">✕ Close</button>
   </div>
 </div>
   <div id="content">
@@ -540,21 +542,46 @@ async function analyseFood(){
   if(!imgB64&&!txt){res.innerHTML=`<div class="bn bn-r">Upload a photo or describe your meal first.</div>`;return}
   abt.innerHTML=`<span class="sp"></span> Analysing...`;res.innerHTML='';
   const mac=macros();
+  const ak=getApiKey();
+  if(!ak){
+    res.innerHTML=`<div class="bn bn-r">⚠️ No API key found. Tap ⚙️ in the top bar to add your Anthropic API key.</div>`;
+    abt.innerHTML='✨ Analyse';showManualEntry(res);return;
+  }
   const sys=`You are a precise nutrition analyst for Ajay (31M, hypothyroidism + fatty liver, body recomposition 82.5kg→70kg). Targets: ${calTarget()} kcal, 140g protein, ${mac.fat}g fat, ${mac.carb}g carbs, 30g fiber. Time: ${timeStr()} IST.
-Respond ONLY with valid JSON, no markdown:
-{"mealName":"","calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"sodium":0,"muscleGain":"great|okay|poor","fatLoss":"great|okay|poor","fattyLiver":"safe|caution|risky","thyroid":"safe|caution|risky","isNonVeg":false,"hasSoy":false,"hasCruciferous":false,"hasHighSugar":false,"hasHighSodium":false,"hasCaffeine":false,"caffeineCount":0,"fattyLiverFlags":[],"thyroidFlags":[],"smartNudge":"one specific coaching tip for Ajay based on this meal and time"}`;
+Respond ONLY with valid JSON, no markdown, no explanation:
+{"mealName":"","calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"sodium":0,"muscleGain":"great","fatLoss":"okay","fattyLiver":"safe","thyroid":"safe","isNonVeg":false,"hasSoy":false,"hasCruciferous":false,"hasHighSugar":false,"hasHighSodium":false,"hasCaffeine":false,"caffeineCount":0,"fattyLiverFlags":[],"thyroidFlags":[],"smartNudge":""}`;
   let msgs;
   if(imgB64)msgs=[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'Analyse this meal for Ajay. Return only JSON.'}]}];
   else msgs=[{role:'user',content:`Analyse this meal for Ajay: "${txt}". Return only JSON.`}];
   try{
-    const ak=getApiKey();const hdrs={'Content-Type':'application/json','anthropic-version':'2023-06-01'};
-    if(ak){hdrs['x-api-key']=ak;hdrs['anthropic-dangerous-direct-browser-access']='true'}
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:hdrs,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:msgs})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:msgs})});
+    if(!r.ok){
+      const err=await r.json().catch(()=>({error:{message:r.statusText}}));
+      const msg=err?.error?.message||r.statusText;
+      let errHtml='';
+      if(r.status===401)errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Error 401 — Invalid API key</strong><br>Your key was rejected. Go to ⚙️ Settings → paste your key again. Make sure it starts with <code>sk-ant-</code> with no extra spaces.</div>`;
+      else if(r.status===403)errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Error 403 — Access denied</strong><br>Your Anthropic account may not have billing set up. Visit console.anthropic.com → Billing → add a card.</div>`;
+      else if(r.status===429)errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Error 429 — Rate limit</strong><br>Too many requests. Wait 30 seconds and try again.</div>`;
+      else if(r.status===529)errHtml=`<div class="bn bn-a" style="margin-bottom:6px">⚠️ <strong>Error 529 — Anthropic servers busy</strong><br>Try again in a minute.</div>`;
+      else errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Error ${r.status}</strong>: ${msg}</div>`;
+      res.innerHTML=errHtml;
+      abt.innerHTML='✨ Analyse';showManualEntry(res);return;
+    }
     const d=await r.json();
     const raw=(d.content?.find(c=>c.type==='text')?.text||'').replace(/```json|```/g,'').trim();
     processFood(JSON.parse(raw));
-  }catch(err){console.error(err);showManualEntry(res)}
-  abt.innerHTML='✨ Analyse';
+  }catch(err){
+    console.error(err);
+    let errHtml='';
+    if(err.message?.toLowerCase().includes('cors'))
+      errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>CORS Error</strong><br>Browser blocked the request. Make sure you are opening the app from your GitHub Pages URL, not a local file.</div>`;
+    else if(err.message?.toLowerCase().includes('failed to fetch')||err.message?.toLowerCase().includes('network'))
+      errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Network Error</strong><br>Could not reach Anthropic. Check your internet connection and try again.</div>`;
+    else
+      errHtml=`<div class="bn bn-r" style="margin-bottom:6px">❌ <strong>Unexpected Error</strong><br>${err.message||'Unknown error'}.<br>Try ⚙️ → 🔍 Test API Key for a full diagnosis.</div>`;
+    res.innerHTML=errHtml;
+    abt.innerHTML='✨ Analyse';showManualEntry(res);
+  }
 }
 
 function processFood(j){
@@ -565,7 +592,7 @@ function processFood(j){
   setTimeout(()=>{closeLogger();renderFood();renderAlerts()},1400);
 }
 
-function showManualEntry(res){res.innerHTML=`<div class="bn bn-a" style="margin-bottom:8px">⚠️ AI unavailable — enter manually:</div>
+function showManualEntry(res){const prev=res.innerHTML;res.innerHTML=prev+`<div class="bn bn-a" style="margin-bottom:8px">📝 Enter nutrition manually:</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div class="ig"><label class="lbl">Meal Name</label><input type="text" id="mn" placeholder="Dal rice"></div>
     <div class="ig"><label class="lbl">Calories</label><input type="number" id="mc2" placeholder="350"></div>
@@ -753,7 +780,58 @@ function saveSettings(){
   setTimeout(()=>toggleSettings(),1500);
 }
 
-// ── INIT ──────────────────────────────────────────────────
+async function testApiKey(){
+  const res=document.getElementById('api-test-result');
+  res.style.display='block';
+  const log=(msg,color)=>res.innerHTML+=`<div style="color:${color||'var(--t2)'}">${msg}</div>`;
+  res.innerHTML='';
+  log('🔍 Running diagnostics...','var(--accent)');
+
+  // Step 1 — check key exists
+  const ak=getApiKey();
+  if(!ak){log('❌ No API key saved in app.','var(--warn)');log('→ Paste your key above and tap 💾 Save first.','var(--amber)');return}
+  log(`✅ Key found in storage`,'var(--accent)');
+  log(`   Starts with: ${ak.slice(0,12)}...`);
+  log(`   Length: ${ak.length} characters`);
+  if(!ak.startsWith('sk-ant-')){log('❌ Key format wrong — must start with sk-ant-','var(--warn)');log('→ Copy the key again from console.anthropic.com','var(--amber)');return}
+  log('✅ Key format looks correct','var(--accent)');
+
+  // Step 2 — network check
+  log('⏳ Testing network...');
+  try{
+    const ping=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:10,messages:[{role:'user',content:'Say OK'}]})
+    });
+    const data=await ping.json();
+    log(`   HTTP status: ${ping.status}`);
+    if(ping.status===200){
+      log('✅ API call successful!','var(--accent)');
+      log('✅ AI food analysis is ready to use 🎉','var(--accent)');
+    } else if(ping.status===401){
+      log('❌ Error 401 — API key is invalid or expired','var(--warn)');
+      log('→ Go to console.anthropic.com → API Keys → create a new key','var(--amber)');
+    } else if(ping.status===403){
+      log('❌ Error 403 — Key does not have permission','var(--warn)');
+      log('→ Make sure your Anthropic account has billing set up','var(--amber)');
+    } else if(ping.status===429){
+      log('⚠️ Error 429 — Rate limit hit','var(--amber)');
+      log('→ Wait 1 minute and try again','var(--t2)');
+    } else if(ping.status===529){
+      log('⚠️ Anthropic servers overloaded — try again later','var(--amber)');
+    } else {
+      log(`❌ Unexpected error: ${data?.error?.message||ping.statusText}`, 'var(--warn)');
+    }
+  } catch(e){
+    log('❌ Network request failed','var(--warn)');
+    log(`   Error: ${e.message}`);
+    if(e.message.includes('CORS')||e.message.includes('fetch')){
+      log('→ This is a CORS error — only fixable by using the app on GitHub Pages, not inside an iframe/preview.','var(--amber)');
+    } else {
+      log('→ Check your internet connection and try again.','var(--amber)');
+    }
+  }
+}
 function init(){
   updateTopBar();renderAlerts();renderWeight();
   setInterval(()=>{renderAlerts();updateTopBar()},300000);
