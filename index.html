@@ -169,10 +169,10 @@ label.lbl{display:block;font-size:11px;color:var(--t2);margin-bottom:4px;text-tr
   <div class="sl">⚙️ Settings</div>
   <div class="card">
     <div class="ct">App Info</div>
-    <div class="sr"><span class="sk">Version</span><span class="sv g" id="set-ver">${APP_VERSION}</span></div>
+    <div class="sr"><span class="sk">Version</span><span class="sv g" id="set-ver">—</span></div>
     <div class="sr"><span class="sk">Storage</span><span class="sv" id="set-storage"></span></div>
     <div class="sr"><span class="sk">Environment</span><span class="sv" id="set-env"></span></div>
-    <button class="btn btn-o" style="font-size:13px;margin-top:10px" onclick="hardRefresh()">🔄 Force Refresh App</button>
+    <button class="btn btn-o" style="font-size:13px;margin-top:10px" id="refresh-btn">🔄 Force Refresh App</button>
     <p style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.5">Use this if the app isn't showing latest updates. Your saved data will not be lost.</p>
   </div>
   <div class="card">
@@ -218,7 +218,7 @@ const CARB_WK=Math.round((CAL_WK-560-FAT_WK*9)/4),CARB_RD=Math.round((CAL_RD-560
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const NONVEG_OK=[0,2,3,5];
-let activeTab='weight',charts={},selSlot='breakfast',selBP=[],selExType='strength',selIntensity='Moderate',imgB64=null;
+let imgB64List=[]; // replaces single imgB64
 
 // ── STATE (in-memory, auto-detects storage environment) ───
 let S={setup:false,apikey:'',weights:[],bodyMetrics:[],sleep:[],food:{},water:{},exercise:{},thyronorm:{},festival:{}};
@@ -484,14 +484,17 @@ function renderFood(){
           </div>
           <div class="ua" style="margin:0" onclick="document.getElementById('fu-gal').click()">
             <div class="ua-ic">🖼️</div>
-            <div class="ua-txt">Upload Image</div>
+            <div class="ua-txt">Upload Images</div>
           </div>
         </div>
         <input type="file" id="fu-cam" accept="image/*" capture="environment" style="display:none" onchange="handleImg(event)">
-        <input type="file" id="fu-gal" accept="image/*" style="display:none" onchange="handleImg(event)">
-        <div id="img-prev" style="display:none;margin-bottom:8px">
-          <img id="prev-img" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover">
-          <div style="font-size:11px;color:var(--accent);margin-top:4px;text-align:center">✅ Image ready for analysis</div>
+        <input type="file" id="fu-gal" accept="image/*" multiple style="display:none" onchange="handleImg(event)">
+        <div id="img-prev-list" style="display:none;margin-bottom:8px">
+          <div id="img-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div id="img-count" style="font-size:11px;color:var(--accent)"></div>
+            <button onclick="clearImages()" style="background:none;border:none;color:var(--warn);font-size:12px;cursor:pointer">✕ Clear all</button>
+          </div>
         </div>
       </div>
       <div id="fim-txt" style="display:none">
@@ -542,28 +545,72 @@ function buildMealCard(e,date,idx){
 
 let _fim='img';
 function setFIM(m){_fim=m;document.getElementById('fim-img').style.display=m==='img'?'block':'none';document.getElementById('fim-txt').style.display=m==='txt'?'block':'none';document.getElementById('fi-img').className='chip'+(m==='img'?' on':'');document.getElementById('fi-txt').className='chip'+(m==='txt'?' on':'')}
-function openLogger(slot){selSlot=slot;const lbls={breakfast:'Breakfast',midmorning:'Mid-Morning Snack',lunch:'Lunch',evening:'Evening Snack',dinner:'Dinner'};document.getElementById('logger-slot-lbl').textContent=lbls[slot]||slot;const el=document.getElementById('food-logger');el.style.display='block';el.scrollIntoView({behavior:'smooth'});imgB64=null;document.getElementById('food-result').innerHTML='';document.getElementById('img-prev').style.display='none';const ft=document.getElementById('ftxt');if(ft)ft.value=''}
-function closeLogger(){document.getElementById('food-logger').style.display='none';imgB64=null}
-function handleImg(e){const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{imgB64=ev.target.result.split(',')[1];document.getElementById('prev-img').src=ev.target.result;document.getElementById('img-prev').style.display='block'};rd.readAsDataURL(f)}
+
+function handleImg(e){
+  const files=Array.from(e.target.files);if(!files.length)return;
+  const grid=document.getElementById('img-grid');
+  const prevList=document.getElementById('img-prev-list');
+  const promises=files.map(f=>new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const b64=ev.target.result.split(',')[1];
+      imgB64List.push(b64);
+      const img=document.createElement('img');
+      img.src=ev.target.result;
+      img.style.cssText='width:100%;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--b)';
+      grid.appendChild(img);
+      resolve();
+    };r.readAsDataURL(f);
+  }));
+  Promise.all(promises).then(()=>{
+    prevList.style.display='block';
+    document.getElementById('img-count').textContent=`✅ ${imgB64List.length} image${imgB64List.length>1?'s':''} ready for analysis`;
+  });
+  e.target.value=''; // allow re-selecting same files
+}
+
+function clearImages(){
+  imgB64List=[];
+  document.getElementById('img-grid').innerHTML='';
+  document.getElementById('img-prev-list').style.display='none';
+}
+
+function openLogger(slot){
+  selSlot=slot;
+  const lbls={breakfast:'Breakfast',midmorning:'Mid-Morning Snack',lunch:'Lunch',evening:'Evening Snack',dinner:'Dinner'};
+  document.getElementById('logger-slot-lbl').textContent=lbls[slot]||slot;
+  const el=document.getElementById('food-logger');
+  el.style.display='block';el.scrollIntoView({behavior:'smooth'});
+  clearImages();
+  document.getElementById('food-result').innerHTML='';
+  const ft=document.getElementById('ftxt');if(ft)ft.value='';
+}
+
+function closeLogger(){document.getElementById('food-logger').style.display='none';clearImages()}
 function addWater(){const td=today();setWater(td,Math.min(getWater(td)+250,5000));renderFood()}
 
 async function analyseFood(){
   const abt=document.getElementById('ab-txt'),res=document.getElementById('food-result');
   const txt=document.getElementById('ftxt')?.value?.trim();
-  if(!imgB64&&!txt){res.innerHTML=`<div class="bn bn-r">Upload a photo or describe your meal first.</div>`;return}
-  abt.innerHTML=`<span class="sp"></span> Analysing...`;res.innerHTML='';
+  if(!imgB64List.length&&!txt){res.innerHTML=`<div class="bn bn-r">Upload at least one photo or describe your meal first.</div>`;return}
+  abt.innerHTML=`<span class="sp"></span> Analysing ${imgB64List.length>1?imgB64List.length+' images':''}...`;res.innerHTML='';
   const mac=macros();
   const ak=getApiKey();
-  if(!ak){
-    res.innerHTML=`<div class="bn bn-r">⚠️ No API key found. Tap ⚙️ in the top bar to add your Anthropic API key.</div>`;
-    abt.innerHTML='✨ Analyse';showManualEntry(res);return;
-  }
-  const sys=`You are a precise nutrition analyst for Ajay (31M, hypothyroidism + fatty liver, body recomposition 82.5kg→70kg). Targets: ${calTarget()} kcal, 140g protein, ${mac.fat}g fat, ${mac.carb}g carbs, 30g fiber. Time: ${timeStr()} IST.
+  if(!ak){res.innerHTML=`<div class="bn bn-r">⚠️ No API key found. Tap ⚙️ in the top bar to add your key.</div>`;abt.innerHTML='✨ Analyse';showManualEntry(res);return;}
+  const sys=`You are a precise nutrition analyst for Ajay (31M, hypothyroidism + fatty liver, body recomposition 82.5kg→70kg). Targets: ${calTarget()} kcal, 140g protein, ${mac.fat}g fat, ${mac.carb}g carbs, 30g fiber. Time: ${timeStr()} IST.${imgB64List.length>1?' Multiple images show different dishes of the same meal — analyse the combined total nutrition.':''}
 Respond ONLY with valid JSON, no markdown, no explanation:
 {"mealName":"","calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"sodium":0,"muscleGain":"great","fatLoss":"okay","fattyLiver":"safe","thyroid":"safe","isNonVeg":false,"hasSoy":false,"hasCruciferous":false,"hasHighSugar":false,"hasHighSodium":false,"hasCaffeine":false,"caffeineCount":0,"fattyLiverFlags":[],"thyroidFlags":[],"smartNudge":""}`;
-  let msgs;
-  if(imgB64)msgs=[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'Analyse this meal for Ajay. Return only JSON.'}]}];
-  else msgs=[{role:'user',content:`Analyse this meal for Ajay: "${txt}". Return only JSON.`}];
+  let msgContent=[];
+  if(imgB64List.length){
+    imgB64List.forEach((b64,i)=>{
+      if(imgB64List.length>1)msgContent.push({type:'text',text:`Image ${i+1}:`});
+      msgContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});
+    });
+    msgContent.push({type:'text',text:imgB64List.length>1?`Analyse all ${imgB64List.length} dishes above as one combined meal for Ajay. Return only JSON.`:'Analyse this meal for Ajay. Return only JSON.'});
+  } else {
+    msgContent=`Analyse this meal for Ajay: "${txt}". Return only JSON.`;
+  }
+  const msgs=[{role:'user',content:msgContent}];
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:msgs})});
     if(!r.ok){
@@ -769,14 +816,21 @@ Give a short specific debrief under 90 words:
 }
 
 // ── SETTINGS ─────────────────────────────────────────────
+function hardRefresh(){}
+
 function toggleSettings(){
   const p=document.getElementById('settings-panel');
   const open=p.style.display!=='none';
   p.style.display=open?'none':'block';
   if(!open){
+    // Populate version/env info
+    document.getElementById('set-ver').textContent=APP_VERSION;
+    document.getElementById('set-storage').textContent=useWS?'window.storage (claude.ai)':'localStorage (PWA/GitHub)';
+    document.getElementById('set-env').textContent=useWS?'claude.ai':'Standalone / GitHub Pages';
     const inp=document.getElementById('set-apikey');
-    if(inp){inp.value='';inp.placeholder=getApiKey()?'Key already saved — paste new to update':'sk-ant-...'}
+    if(inp){inp.value='';inp.placeholder=getApiKey()?'Key saved — paste new to update':'sk-ant-...'}
     document.getElementById('set-key-status').style.display='none';
+    document.getElementById('api-test-result').style.display='none';
     p.scrollIntoView({behavior:'smooth'});
   }
 }
