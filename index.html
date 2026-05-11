@@ -554,7 +554,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
   if(imgB64)msgs=[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'Analyse this meal for Ajay. Return only JSON.'}]}];
   else msgs=[{role:'user',content:`Analyse this meal for Ajay: "${txt}". Return only JSON.`}];
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:msgs})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,messages:msgs})});
     if(!r.ok){
       const err=await r.json().catch(()=>({error:{message:r.statusText}}));
       const msg=err?.error?.message||r.statusText;
@@ -750,7 +750,7 @@ Give a short specific debrief under 90 words:
   try{
     const ak=getApiKey();const hdrs={'Content-Type':'application/json','anthropic-version':'2023-06-01'};
     if(ak){hdrs['x-api-key']=ak;hdrs['anthropic-dangerous-direct-browser-access']='true'}
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:hdrs,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:hdrs,body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const d=await r.json();const txt=d.content?.find(c=>c.type==='text')?.text||'No response.';
     res.innerHTML=`<div class="tip-box" style="line-height:1.9">${txt.replace(/\n/g,'<br>')}</div>`;
   }catch(e){res.innerHTML=`<div class="bn bn-a">AI coaching unavailable. Add your Anthropic API key in setup.</div>`}
@@ -801,7 +801,7 @@ async function testApiKey(){
   try{
     const ping=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
       headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':ak,'anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:10,messages:[{role:'user',content:'Say OK'}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:10,messages:[{role:'user',content:'Say OK'}]})
     });
     const data=await ping.json();
     log(`   HTTP status: ${ping.status}`);
