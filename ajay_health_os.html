@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ajay · Health OS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0F0F0F;--card:#1A1A1A;--card2:#222;--accent:#00C896;--warn:#FF6B6B;--amber:#FFB347;--blue:#4A9EFF;--text:#F0F0F0;--t2:#999;--t3:#555;--b:#2A2A2A;--b2:#383838}
+html,body{height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;font-size:14px;padding-bottom:68px}
+.tab-pane{display:none}.tab-pane.active{display:block}
+/* Topbar */
+#topbar{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--b);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.tb-date .dy{font-size:11px;color:var(--t2)}.tb-date .dt{font-size:12px;font-weight:600}
+.thy-pill{flex:1;text-align:center}
+.thy-pill button{background:rgba(255,107,107,.13);border:1px solid rgba(255,107,107,.35);border-radius:20px;padding:6px 10px;font-size:12px;color:#FF9090;cursor:pointer;width:100%;white-space:nowrap}
+.thy-pill button.done{background:rgba(0,200,150,.12);border-color:rgba(0,200,150,.4);color:var(--accent)}
+.fest-wrap{display:flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0}
+.fest-lbl{font-size:10px;color:var(--t2)}
+.sw{width:32px;height:17px;background:var(--b2);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.sw.on{background:var(--amber)}.sw::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s}.sw.on::after{left:17px}
+/* Bottomnav */
+#bnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--card);border-top:1px solid var(--b);display:flex;height:60px}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--t3);font-size:10px;background:none;border:none;padding:0}
+.nb.active{color:var(--accent)}.nb .ic{font-size:20px;line-height:1}
+/* Cards / Banners */
+.card{background:var(--card);border-radius:12px;padding:14px;margin:0 12px 10px;border:1px solid var(--b)}
+.ct{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.bn{border-radius:10px;padding:10px 12px;margin:0 12px 8px;font-size:12.5px;line-height:1.5}
+.bn-r{background:rgba(255,107,107,.11);border:1px solid rgba(255,107,107,.3);color:#FF9090}
+.bn-a{background:rgba(255,179,71,.11);border:1px solid rgba(255,179,71,.3);color:#FFBB66}
+.bn-g{background:rgba(0,200,150,.09);border:1px solid rgba(0,200,150,.3);color:#00C896}
+.bn-b{background:rgba(74,158,255,.09);border:1px solid rgba(74,158,255,.3);color:#7ABEFF}
+/* Progress bars */
+.pr{margin-bottom:8px}
+.pr-head{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
+.pr-key{color:var(--t2)}.pr-val{color:var(--t2)}
+.pr-bar{height:6px;background:var(--b);border-radius:3px;overflow:hidden}
+.pr-fill{height:100%;border-radius:3px;transition:width .4s}
+/* Buttons / Inputs */
+.btn{display:block;width:100%;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+.btn:active{opacity:.7}.btn-g{background:var(--accent);color:#000}.btn-o{background:transparent;border:1px solid var(--b2);color:var(--text)}
+input,textarea,select{background:var(--card2);border:1px solid var(--b);border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;width:100%;outline:none;font-family:inherit}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+input[type=range]{padding:0;background:none;border:none;accent-color:var(--accent)}
+input[type=time]{color-scheme:dark}
+label.lbl{display:block;font-size:11px;color:var(--t2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.ig{margin-bottom:10px}
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{padding:5px 11px;border-radius:16px;border:1px solid var(--b2);font-size:12px;cursor:pointer;color:var(--t2);background:var(--card2);transition:all .15s}
+.chip.on{background:rgba(0,200,150,.15);border-color:var(--accent);color:var(--accent)}
+.chip:active{opacity:.7}
+/* Section label */
+.sl{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:10px 12px 3px}
+/* Stat row */
+.sr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b)}
+.sr:last-child{border:none}.sk{font-size:12px;color:var(--t2)}.sv{font-size:13px;font-weight:600}
+.sv.g{color:var(--accent)}.sv.r{color:var(--warn)}.sv.a{color:var(--amber)}
+/* Chart */
+.cw{position:relative;height:170px;margin:8px 0 4px}
+/* Meal card */
+.mc{background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--b)}
+.mc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.mc-name{font-size:14px;font-weight:600}.mc-meta{font-size:11px;color:var(--t3);margin-top:1px}
+.ng{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:8px 0}
+.nb2{background:var(--card);border-radius:7px;padding:7px;text-align:center}
+.nb2-v{font-size:14px;font-weight:700;color:var(--accent)}.nb2-l{font-size:10px;color:var(--t3);margin-top:1px}
+.ratings{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0}
+.rb{font-size:11px;padding:3px 8px;border-radius:10px;background:var(--card);border:1px solid var(--b)}
+.flag-item{font-size:12px;margin:3px 0;line-height:1.4}
+.nudge{font-size:12px;color:var(--t2);padding:8px;background:var(--card);border-radius:6px;border-left:2px solid var(--accent);margin-top:6px;line-height:1.5}
+/* Upload */
+.ua{border:2px dashed var(--b2);border-radius:10px;padding:18px;text-align:center;cursor:pointer;color:var(--t2);margin-bottom:8px}
+.ua .ua-ic{font-size:28px;margin-bottom:4px}.ua .ua-txt{font-size:12px}
+/* Water */
+.wd{font-size:20px;cursor:pointer;padding:2px;line-height:1}
+/* Weekly tracker */
+.wk{display:flex;justify-content:space-around;padding:6px 0}
+.wkd{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--t2)}
+.wkd .dk{width:30px;height:30px;border-radius:50%;background:var(--b);display:flex;align-items:center;justify-content:center;font-size:13px}
+.wkd .dk.done{background:var(--accent);color:#000}.wkd .dk.rest{background:var(--card2);color:var(--t3);font-size:10px}
+.wkd .dk.tod{box-shadow:0 0 0 2px var(--accent)}
+/* Score */
+.sc{width:88px;height:88px;border-radius:50%;border:3px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 12px}
+.sc-n{font-size:26px;font-weight:700}.sc-l{font-size:10px;color:var(--t2)}
+/* Body metrics */
+.bm-box{background:var(--card2);border-radius:8px;padding:10px;text-align:center}
+.bm-val{font-size:18px;font-weight:700}.bm-key{font-size:11px;color:var(--t3);margin-top:2px}.bm-target{font-size:11px;color:var(--accent);margin-top:2px}
+/* Debrief check */
+.db-check{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b)}
+.db-check:last-child{border:none}.db-ic{font-size:16px;width:24px}.db-text{font-size:13px;flex:1}.db-status{font-size:14px}
+/* Tip box */
+.tip-box{background:rgba(0,200,150,.07);border-radius:8px;padding:10px;font-size:12px;color:var(--t2);line-height:1.6;border-left:2px solid rgba(0,200,150,.4)}
+/* Spinner */
+.sp{display:inline-block;width:14px;height:14px;border:2px solid var(--b2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;gap:8px;align-items:center}
+.row-sb{display:flex;justify-content:space-between;align-items:center}
+/* Setup */
+#setup{min-height:100vh;padding:16px;padding-bottom:32px}
+.setup-card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--b)}
+.setup-card h3{color:var(--accent);font-size:13px;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.setup-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b);font-size:13px;gap:12px}
+.setup-row:last-child{border:none}.setup-row .k{color:var(--t2);flex-shrink:0}.setup-row .v{color:var(--text);font-weight:500;text-align:right}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <div style="text-align:center;padding:24px 0 20px">
+    <div style="font-size:36px;margin-bottom:8px">🏋️</div>
+    <div style="font-size:24px;font-weight:700;color:var(--accent)">Ajay Health OS</div>
+    <div style="font-size:13px;color:var(--t2);margin-top:4px">Your personal health command centre</div>
+  </div>
+  <div class="setup-card"><h3>👤 Profile</h3>
+    <div class="setup-row"><span class="k">Name / Age</span><span class="v">Ajay · 31 · Male</span></div>
+    <div class="setup-row"><span class="k">Weight</span><span class="v">82.5 kg → Target: 70 kg</span></div>
+    <div class="setup-row"><span class="k">Height</span><span class="v">166 cm</span></div>
+    <div class="setup-row"><span class="k">Body Fat</span><span class="v">30.7% → Target: 15%</span></div>
+    <div class="setup-row"><span class="k">Visceral Fat</span><span class="v">12.5 → Target: 10</span></div>
+    <div class="setup-row"><span class="k">Conditions</span><span class="v">Hypothyroidism · Fatty Liver</span></div>
+    <div class="setup-row"><span class="k">Medication</span><span class="v">Thyronorm 62.5 mcg · daily</span></div>
+    <div class="setup-row"><span class="k">Goal</span><span class="v">Body Recomposition</span></div>
+    <div class="setup-row"><span class="k">Activity</span><span class="v">Gym 5×/week · Strength Focus</span></div>
+  </div>
+  <div class="setup-card"><h3>📊 Calculated Calorie Targets</h3>
+    <div class="setup-row"><span class="k">BMR (Mifflin-St Jeor)</span><span class="v">1,713 kcal</span></div>
+    <div class="setup-row"><span class="k">TDEE (×1.55)</span><span class="v">2,654 kcal</span></div>
+    <div class="setup-row"><span class="k">Thyroid adjusted (×0.90)</span><span class="v">2,389 kcal</span></div>
+    <div class="setup-row"><span class="k">Workout days (−20% deficit)</span><span class="v" style="color:var(--accent)">1,911 kcal</span></div>
+    <div class="setup-row"><span class="k">Rest days Sat/Sun (×0.92)</span><span class="v" style="color:var(--amber)">1,758 kcal</span></div>
+  </div>
+  <div class="setup-card"><h3>🥗 Daily Macro Targets</h3>
+    <div class="setup-row"><span class="k">Protein (2g × 70 kg target)</span><span class="v">140 g</span></div>
+    <div class="setup-row"><span class="k">Fat (~25% of cals)</span><span class="v">53 g workout / 49 g rest</span></div>
+    <div class="setup-row"><span class="k">Carbs (remaining)</span><span class="v">218 g workout / 190 g rest</span></div>
+    <div class="setup-row"><span class="k">Fiber (minimum)</span><span class="v">30 g</span></div>
+    <div class="setup-row"><span class="k">Water</span><span class="v">3,000 ml</span></div>
+  </div>
+  <div class="setup-card"><h3>📅 Daily Schedule (fixed constants)</h3>
+    <div class="setup-row"><span class="k">5:30 AM</span><span class="v">Wake up</span></div>
+    <div class="setup-row"><span class="k">5:45 AM</span><span class="v">Thyronorm (empty stomach)</span></div>
+    <div class="setup-row"><span class="k">6:00–6:50 AM</span><span class="v">Fasted Workout 🚫 no food</span></div>
+    <div class="setup-row"><span class="k">8:30 AM</span><span class="v">Breakfast = post-workout meal</span></div>
+    <div class="setup-row"><span class="k">1:00 PM</span><span class="v">Lunch</span></div>
+    <div class="setup-row"><span class="k">4:30 PM</span><span class="v">Evening Snack</span></div>
+    <div class="setup-row"><span class="k">8:00–8:30 PM</span><span class="v">Dinner</span></div>
+    <div class="setup-row"><span class="k">10:45 PM</span><span class="v">Bedtime (6.75 h target)</span></div>
+  </div>
+  <div class="setup-card"><h3>🏋️ Workout Split</h3>
+    <div class="setup-row"><span class="k">Mon – Fri</span><span class="v">Strength Training</span></div>
+    <div class="setup-row"><span class="k">Sat – Sun</span><span class="v">Rest Days</span></div>
+    <div class="setup-row"><span class="k">Non-veg allowed</span><span class="v">Tue · Wed · Fri · Sun</span></div>
+    <div class="setup-row"><span class="k">Veg-only days</span><span class="v">Mon · Thu · Sat + Festival</span></div>
+  </div>
+  <div class="setup-card"><h3>🔑 Claude AI — Food Analysis</h3>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">AI food photo analysis uses the Claude API. If using inside claude.ai leave blank. For standalone use on your device, enter your Anthropic API key.</p>
+    <div class="ig"><input type="password" id="apiKeyInput" placeholder="sk-ant-... (optional for claude.ai)"></div>
+  </div>
+  <button class="btn btn-g" onclick="completeSetup()" style="margin:4px 12px 0;width:calc(100% - 24px)">✅ Everything looks correct — Start Tracking</button>
+  <p style="text-align:center;font-size:11px;color:var(--t3);margin-top:10px;padding:0 16px">Clear browser storage to return to this screen</p>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div id="topbar">
+    <div class="tb-date">
+      <div class="dy" id="tb-day"></div>
+      <div class="dt" id="tb-dt"></div>
+    </div>
+    <div class="thy-pill"><button id="thy-btn" onclick="toggleThyronorm()"></button></div>
+    <div class="fest-wrap" onclick="toggleFestival()">
+      <span class="fest-lbl">🕉️</span>
+      <div class="sw" id="fest-sw"></div>
+    </div>
+  </div>
+  <div id="alert-zone"></div>
+  <div id="content">
+    <div class="tab-pane active" id="tab-weight"><div id="wt-content"></div></div>
+    <div class="tab-pane" id="tab-food"><div id="fd-content"></div></div>
+    <div class="tab-pane" id="tab-exercise"><div id="ex-content"></div></div>
+    <div class="tab-pane" id="tab-sleep"><div id="sl-content"></div></div>
+    <div class="tab-pane" id="tab-debrief"><div id="db-content"></div></div>
+  </div>
+  <div id="bnav">
+    <button class="nb active" data-tab="weight" onclick="switchTab('weight',this)"><span class="ic">⚖️</span>Weight</button>
+    <button class="nb" data-tab="food" onclick="switchTab('food',this)"><span class="ic">🍽️</span>Food</button>
+    <button class="nb" data-tab="exercise" onclick="switchTab('exercise',this)"><span class="ic">💪</span>Exercise</button>
+    <button class="nb" data-tab="sleep" onclick="switchTab('sleep',this)"><span class="ic">😴</span>Sleep</button>
+    <button class="nb" data-tab="debrief" onclick="switchTab('debrief',this)"><span class="ic">📊</span>Debrief</button>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────
+const BMR = (10*82.5)+(6.25*166)-(5*31)+5;           // 1712.5
+const CAL_WK = Math.round(BMR*1.55*0.90*0.80);        // 1911
+const CAL_RD = Math.round(CAL_WK*0.92);               // 1758
+const FAT_WK = Math.round(CAL_WK*.25/9);              // 53
+const FAT_RD = Math.round(CAL_RD*.25/9);              // 49
+const CARB_WK = Math.round((CAL_WK-140*4-FAT_WK*9)/4);// 218
+const CARB_RD = Math.round((CAL_RD-140*4-FAT_RD*9)/4);// 190
+const PFX='ajay_health_';
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const NONVEG_OK=[0,2,3,5]; // Sun,Tue,Wed,Fri
+let activeTab='weight', charts={}, selSlot='breakfast', selBP=[], selExType='strength', selIntensity='Moderate', imgB64=null;
+
+// ── IST UTILS ─────────────────────────────────────────────
+const ist=()=>new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+const pad=n=>n<10?'0'+n:String(n);
+const today=()=>{const n=ist();return`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}`};
+const nowH=()=>ist().getHours();
+const nowM=()=>ist().getMinutes();
+const timeStr=()=>{const n=ist();return`${pad(n.getHours())}:${pad(n.getMinutes())}`};
+const wday=()=>ist().getDay();
+const isRest=()=>{const d=wday();return d===0||d===6};
+const isNVDay=()=>!getFest()&&NONVEG_OK.includes(wday());
+const calTarget=()=>isRest()?CAL_RD:CAL_WK;
+const macros=()=>isRest()?{cal:CAL_RD,pro:140,fat:FAT_RD,carb:CARB_RD,fiber:30,water:3000}:{cal:CAL_WK,pro:140,fat:FAT_WK,carb:CARB_WK,fiber:30,water:3000};
+const daysBetween=(d1,d2)=>Math.round((new Date(d2)-new Date(d1))/86400000);
+
+// ── STORAGE ───────────────────────────────────────────────
+const ls=k=>localStorage.getItem(PFX+k);
+const lss=(k,v)=>localStorage.setItem(PFX+k,JSON.stringify(v));
+const lsg=(k,d)=>{const v=ls(k);return v!=null?JSON.parse(v):d};
+const getApiKey=()=>ls('apikey')||'';
+const setApiKey=v=>localStorage.setItem(PFX+'apikey',v);
+const getThyronorm=()=>lsg('thy_'+today(),false);
+const setThyronorm=v=>lss('thy_'+today(),v);
+const getFest=()=>lsg('fest_'+today(),false);
+const setFest=v=>lss('fest_'+today(),v);
+const getWtLog=()=>lsg('weights',[]);
+const getBMLog=()=>lsg('body_metrics',[]);
+const getFoodLog=d=>lsg('food_'+d,[]);
+const getWater=d=>lsg('water_'+d,0);
+const setWater=(d,v)=>lss('water_'+d,v);
+const getEx=d=>lsg('ex_'+d,null);
+const setEx=(d,v)=>lss('ex_'+d,v);
+const getSleepLog=()=>lsg('sleep',[]);
+
+function addWeight(w,d){const l=getWtLog(),i=l.findIndex(e=>e.date===d);if(i>=0)l[i].weight=w;else l.push({date:d,weight:w});l.sort((a,b)=>a.date.localeCompare(b.date));lss('weights',l)}
+function addBM(m){const l=getBMLog(),ym=m.date.slice(0,7),i=l.findIndex(e=>e.date.slice(0,7)===ym);if(i>=0)l[i]=m;else l.push(m);l.sort((a,b)=>a.date.localeCompare(b.date));lss('body_metrics',l)}
+function addFood(d,e){const l=getFoodLog(d);l.push(e);lss('food_'+d,l)}
+function delFood(d,i){const l=getFoodLog(d);l.splice(i,1);lss('food_'+d,l)}
+function addSleep(e){const l=getSleepLog(),i=l.findIndex(x=>x.date===e.date);if(i>=0)l[i]=e;else l.push(e);l.sort((a,b)=>a.date.localeCompare(b.date));lss('sleep',l)}
+
+function dayTotals(d){return getFoodLog(d).reduce((t,e)=>({cal:t.cal+(e.calories||0),pro:t.pro+(e.protein||0),fat:t.fat+(e.fat||0),carb:t.carb+(e.carbs||0),fiber:t.fiber+(e.fiber||0),caffeine:t.caffeine+(e.caffeineCount||0)}),{cal:0,pro:0,fat:0,carb:0,fiber:0,caffeine:0})}
+
+// ── SETUP ─────────────────────────────────────────────────
+function completeSetup(){const k=document.getElementById('apiKeyInput').value.trim();if(k)setApiKey(k);lss('setup_done',true);document.getElementById('setup').style.display='none';document.getElementById('app').style.display='block';init()}
+
+// ── TOPBAR ────────────────────────────────────────────────
+function updateTopBar(){
+  const n=ist();
+  document.getElementById('tb-day').textContent=DAYS[n.getDay()];
+  document.getElementById('tb-dt').textContent=`${n.getDate()} ${MON[n.getMonth()]} ${n.getFullYear()}`;
+  const done=getThyronorm();
+  const btn=document.getElementById('thy-btn');
+  btn.textContent=done?'💊 Thyronorm ✅':'💊 Thyronorm?';
+  btn.className=done?'done':'';
+  document.getElementById('fest-sw').className='sw'+(getFest()?' on':'');
+}
+function toggleThyronorm(){setThyronorm(!getThyronorm());updateTopBar();renderAlerts();if(activeTab==='food')renderFood()}
+function toggleFestival(){setFest(!getFest());updateTopBar();renderAlerts();if(activeTab==='food')renderFood()}
+
+// ── ALERTS ────────────────────────────────────────────────
+function renderAlerts(){
+  const h=nowH(),td=today(),tot=dayTotals(td),mac=macros(),food=getFoodLog(td);
+  const slots=food.map(f=>f.slot);
+  let html='';
+  if(!getThyronorm()){
+    if(h>=7)html+=`<div class="bn bn-r" style="margin-top:8px">🚨 <strong>Thyronorm not taken!</strong> Take immediately — absorption best on empty stomach early morning.</div>`;
+    else html+=`<div class="bn bn-a" style="margin-top:8px">💊 Reminder: Thyronorm at 5:45 AM — empty stomach before workout.</div>`;
+  }
+  if(isRest())html+=`<div class="bn bn-b" style="margin-top:8px">🏖️ <strong>Rest Day</strong> — Target today: ${CAL_RD} kcal. Recovery days build the muscle you earned this week.</div>`;
+  if(getFest())html+=`<div class="bn bn-a" style="margin-top:8px">🕉️ <strong>Festival Day</strong> — Vegetarian only today regardless of day of week.</div>`;
+  if(h>=8&&h<10&&!slots.includes('breakfast'))html+=`<div class="bn bn-a" style="margin-top:8px">🏋️ Post-workout window open — log your breakfast now. Protein + carbs for recovery.</div>`;
+  if(h>=13&&h<15&&!slots.includes('lunch'))html+=`<div class="bn bn-a" style="margin-top:8px">🕐 Lunch time — don't skip it. Skipping meals slows metabolism, especially with hypothyroidism.</div>`;
+  if(h>=18){const need=mac.pro-tot.pro;if(need>mac.pro*.2)html+=`<div class="bn bn-a" style="margin-top:8px">You need ${Math.round(need)}g more protein today. Add paneer/eggs/chicken at dinner.</div>`;}
+  if(h>=20&&tot.cal>0&&tot.cal<mac.cal*.7)html+=`<div class="bn bn-r" style="margin-top:8px">⚠️ Only ${Math.round(tot.cal)} kcal logged — too low. Risks muscle loss. Add a protein-rich meal.</div>`;
+  if(h>=20&&tot.cal>mac.cal*1.15)html+=`<div class="bn bn-r" style="margin-top:8px">🔴 Over by ${Math.round(tot.cal-mac.cal)} kcal. Keep dinner light — grilled protein + salad.</div>`;
+  if(h>=21&&!slots.includes('dinner'))html+=`<div class="bn bn-a" style="margin-top:8px">🌙 Dinner not logged. Late eating disrupts sleep and fat oxidation. Eat by 8:30 PM.</div>`;
+  if(h>=18&&tot.fiber<mac.fiber*.5&&tot.cal>0)html+=`<div class="bn bn-a" style="margin-top:8px">🥗 Fiber at ${Math.round(tot.fiber)}g — under half your target. Add salad, fruit, or dal.</div>`;
+  if(tot.caffeine>=2)html+=`<div class="bn bn-a" style="margin-top:8px">☕ ${tot.caffeine} coffees today. Limit to 1 — excess caffeine raises cortisol and interferes with thyroid function.</div>`;
+  document.getElementById('alert-zone').innerHTML=html;
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────
+function switchTab(tab,btn){
+  activeTab=tab;
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  charts={};
+  if(tab==='weight')renderWeight();
+  else if(tab==='food')renderFood();
+  else if(tab==='exercise')renderExercise();
+  else if(tab==='sleep')renderSleep();
+  else renderDebrief();
+}
+
+// ── WEIGHT TAB ────────────────────────────────────────────
+function renderWeight(){
+  const td=today(),log=getWtLog(),bm=getBMLog();
+  const latest=log.length?log[log.length-1].weight:82.5;
+  const gap=(latest-70).toFixed(1);
+  const staleDays=log.length?daysBetween(log[log.length-1].date,td):999;
+  const noMove=checkNoMove(log);
+  const wklyLoss=log.length>=7?calcWklyLoss(log.slice(-14)):0;
+  const estWks=wklyLoss>0?Math.ceil((latest-70)/wklyLoss):null;
+  const latestBM=bm.length?bm[bm.length-1]:null;
+  const todayVal=log.find(e=>e.date===td)?.weight||'';
+
+  let html=`<div class="sl">Today's Weight</div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <input type="number" id="wi" placeholder="e.g. 82.1" step="0.1" value="${todayVal}" style="flex:1">
+      <button class="btn btn-g" style="width:auto;padding:10px 18px" onclick="logWeight()">Log</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="bm-box"><div class="bm-val" style="color:var(--warn)">${latest} kg</div><div class="bm-key">Current</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:var(--accent)">70 kg</div><div class="bm-key">Target</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:var(--amber)">${gap} kg</div><div class="bm-key">Gap</div></div>
+    </div>
+    <div class="sr"><span class="sk">Est. weeks to goal</span><span class="sv ${estWks?'g':'a'}">${estWks?estWks+' weeks':'Log more data'}</span></div>
+    <div class="sr"><span class="sk">Weekly loss rate</span><span class="sv g">${wklyLoss>0?wklyLoss.toFixed(2)+' kg/wk':'Calculating...'}</span></div>
+  </div>
+  ${staleDays>=2?`<div class="bn bn-a">⚠️ Weight not logged for ${staleDays} days. Daily logging gives better trend data.</div>`:''}
+  ${noMove?`<div class="bn bn-b">⚖️ Scale hasn't moved in 5+ days — this is normal during recomposition. If training consistently, fat may be dropping while muscle builds. Check body fat % and measurements — they tell the real story.</div>`:''}
+  ${log.length>1?`<div class="card" style="padding-bottom:8px">
+    <div class="row-sb" style="margin-bottom:8px">
+      <div class="ct" style="margin-bottom:0">Weight Trend</div>
+      <div style="display:flex;gap:4px">
+        <button class="chip on" onclick="setWR(7,this)">7D</button>
+        <button class="chip" onclick="setWR(30,this)">30D</button>
+        <button class="chip" onclick="setWR(90,this)">3M</button>
+        <button class="chip" onclick="setWR(365,this)">1Y</button>
+      </div>
+    </div>
+    <div class="cw"><canvas id="wt-chart"></canvas></div>
+  </div>`:''}
+  <div class="sl">Monthly Body Metrics</div>
+  <div class="bn bn-b">📏 These numbers matter more than the scale. Weight can stay flat while your body is transforming.</div>
+  <div class="card">
+    <div class="ct">Current Readings</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="bm-box"><div class="bm-val" style="color:var(--amber)">${latestBM?latestBM.bodyFat:30.7}%</div><div class="bm-key">Body Fat</div><div class="bm-target">Target: 15%</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:var(--amber)">${latestBM?latestBM.visceralFat:12.5}</div><div class="bm-key">Visceral Fat</div><div class="bm-target">Target: 10</div></div>
+      ${latestBM&&latestBM.waist?`<div class="bm-box"><div class="bm-val">${latestBM.waist}</div><div class="bm-key">Waist cm</div></div>`:''}
+      ${latestBM&&latestBM.arms?`<div class="bm-box"><div class="bm-val">${latestBM.arms}</div><div class="bm-key">Arms cm</div></div>`:''}
+    </div>
+    <div class="ct">Log This Month</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="ig"><label class="lbl">Body Fat %</label><input type="number" id="bm-bf" placeholder="${latestBM?latestBM.bodyFat:30.7}" step="0.1"></div>
+      <div class="ig"><label class="lbl">Visceral Fat</label><input type="number" id="bm-vf" placeholder="${latestBM?latestBM.visceralFat:12.5}" step="0.1"></div>
+      <div class="ig"><label class="lbl">Waist (cm)</label><input type="number" id="bm-wa" placeholder="${latestBM?latestBM.waist:90}" step="0.5"></div>
+      <div class="ig"><label class="lbl">Arms (cm)</label><input type="number" id="bm-ar" placeholder="${latestBM?latestBM.arms:35}" step="0.5"></div>
+    </div>
+    <div class="ig"><label class="lbl">Chest (cm)</label><input type="number" id="bm-ch" placeholder="${latestBM?latestBM.chest:100}" step="0.5"></div>
+    <button class="btn btn-g" onclick="logBM()">Save Monthly Metrics</button>
+  </div>
+  ${bm.length>1?`<div class="card" style="padding-bottom:8px"><div class="ct">Body Fat % Trend</div><div class="cw"><canvas id="bf-chart"></canvas></div></div>`:''}`;
+
+  document.getElementById('wt-content').innerHTML=html;
+  setTimeout(()=>{if(log.length>1)drawWtChart(7);if(bm.length>1)drawBFChart();},50);
+}
+
+function logWeight(){const v=parseFloat(document.getElementById('wi').value);if(isNaN(v)||v<30||v>300){alert('Enter a valid weight');return;}addWeight(v,today());renderWeight()}
+function logBM(){const bf=parseFloat(document.getElementById('bm-bf').value),vf=parseFloat(document.getElementById('bm-vf').value),wa=parseFloat(document.getElementById('bm-wa').value),ch=parseFloat(document.getElementById('bm-ch').value),ar=parseFloat(document.getElementById('bm-ar').value);if(isNaN(bf)&&isNaN(vf)&&isNaN(wa)){alert('Enter at least one measurement');return;}addBM({date:today(),bodyFat:bf||null,visceralFat:vf||null,waist:wa||null,chest:ch||null,arms:ar||null});renderWeight()}
+function calcWklyLoss(l){if(l.length<2)return 0;const wks=daysBetween(l[0].date,l[l.length-1].date)/7;if(wks<0.5)return 0;return(l[0].weight-l[l.length-1].weight)/wks}
+function checkNoMove(l){if(l.length<5)return false;const r=l.slice(-5);return Math.max(...r.map(e=>e.weight))-Math.min(...r.map(e=>e.weight))<0.3}
+let _wRange=7;
+function setWR(n,el){_wRange=n;document.querySelectorAll('#wt-content .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');if(charts.wt){charts.wt.destroy();delete charts.wt}drawWtChart(n)}
+function drawWtChart(days){
+  const c=document.getElementById('wt-chart');if(!c)return;
+  const co=new Date();co.setDate(co.getDate()-days);
+  const l=getWtLog().filter(e=>new Date(e.date)>=co);if(l.length<2)return;
+  if(charts.wt)charts.wt.destroy();
+  charts.wt=new Chart(c,{type:'line',data:{labels:l.map(e=>e.date.slice(5)),datasets:[{data:l.map(e=>e.weight),borderColor:'#00C896',borderWidth:2,pointRadius:3,pointBackgroundColor:'#00C896',tension:.3,fill:false},{data:l.map(()=>70),borderColor:'rgba(255,107,107,.4)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} kg`}}},scales:{x:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},suggestedMin:65,suggestedMax:86}}}})
+}
+function drawBFChart(){
+  const c=document.getElementById('bf-chart');if(!c)return;
+  const l=getBMLog().filter(e=>e.bodyFat);if(l.length<2)return;
+  if(charts.bf)charts.bf.destroy();
+  charts.bf=new Chart(c,{type:'line',data:{labels:l.map(e=>e.date.slice(0,7)),datasets:[{data:l.map(e=>e.bodyFat),borderColor:'#FFB347',borderWidth:2,pointRadius:4,pointBackgroundColor:'#FFB347',tension:.3,fill:false},{data:l.map(()=>15),borderColor:'rgba(0,200,150,.4)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},suggestedMin:12,suggestedMax:33}}}})
+}
+
+// ── FOOD TAB ──────────────────────────────────────────────
+function renderFood(){
+  const td=today(),tot=dayTotals(td),mac=macros(),water=getWater(td),food=getFoodLog(td);
+  const pct=(v,m)=>Math.min(100,Math.round(v/m*100));
+  const bclr=p=>p>100?'var(--warn)':p>75?'var(--accent)':p>40?'var(--amber)':'var(--warn)';
+  const pb=(lbl,v,m,u,clr)=>`<div class="pr"><div class="pr-head"><span class="pr-key">${lbl}</span><span class="pr-val">${Math.round(v)} / ${m}${u}</span></div><div class="pr-bar"><div class="pr-fill" style="width:${pct(v,m)}%;background:${clr||bclr(pct(v,m))}"></div></div></div>`;
+  const drops=Math.min(12,Math.floor(water/250));
+  let wdHtml='';for(let i=0;i<12;i++)wdHtml+=`<span class="wd" onclick="addWater()">${i<drops?'💧':'○'}</span>`;
+
+  const SLOTS=[{k:'breakfast',l:'🍳 Breakfast',t:'8:30 AM',tip:true},{k:'midmorning',l:'🥜 Mid-Morning',t:'~10:30 AM'},{k:'lunch',l:'🍛 Lunch',t:'1:00 PM'},{k:'evening',l:'🍌 Evening Snack',t:'4:30 PM'},{k:'dinner',l:'🌙 Dinner',t:'8:00 PM'}];
+  let slotsHtml=SLOTS.map(s=>{
+    const entries=food.filter(e=>e.slot===s.k);
+    const eHtml=entries.map((e,i)=>buildMealCard(e,td,food.indexOf(e))).join('');
+    return `<div class="sl">${s.l} <span style="color:var(--t3);font-size:11px">· ${s.t}</span></div>
+    ${s.tip?`<div class="tip-box" style="margin:0 12px 8px">✅ Ideal order: Medicine 5:45 AM → Workout → Breakfast 8:30 AM → Coffee after 9:00 AM</div>`:''}
+    <div class="card" style="padding-bottom:8px">${eHtml}<button class="btn btn-o" style="font-size:13px;padding:9px" onclick="openLogger('${s.k}')">+ Add ${s.l.split(' ').slice(1).join(' ')}</button></div>`;
+  }).join('');
+
+  document.getElementById('fd-content').innerHTML=`
+  <div class="sl">Daily Nutrition — ${isRest()?'Rest Day':'Workout Day'}</div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:6px">Target: ${mac.cal} kcal${isRest()?' (rest day)':''}</div>
+    ${pb('Calories',tot.cal,mac.cal,'kcal')}
+    ${pb('Protein',tot.pro,mac.pro,'g','var(--accent)')}
+    ${pb('Carbs',tot.carb,mac.carb,'g','var(--amber)')}
+    ${pb('Fat',tot.fat,mac.fat,'g','var(--blue)')}
+    ${pb('Fiber',tot.fiber,mac.fiber,'g','var(--accent)')}
+    <div class="pr"><div class="pr-head"><span class="pr-key">💧 Water</span><span class="pr-val">${water} / ${mac.water} ml</span></div>
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:5px">${wdHtml}<span style="font-size:10px;color:var(--t3);margin-left:4px">tap to add 250ml</span></div></div>
+  </div>
+  <div id="food-logger" style="display:none">
+    <div class="sl">Log Food — <span id="logger-slot-lbl" style="color:var(--accent)"></span></div>
+    <div class="card" style="padding-bottom:8px">
+      <div class="chips" style="margin-bottom:10px">
+        <div class="chip on" id="fi-img" onclick="setFIM('img')">📷 Photo</div>
+        <div class="chip" id="fi-txt" onclick="setFIM('txt')">✏️ Describe</div>
+      </div>
+      <div id="fim-img">
+        <div class="ua" onclick="document.getElementById('fu').click()"><div class="ua-ic">📷</div><div class="ua-txt">Tap to photograph your meal</div></div>
+        <input type="file" id="fu" accept="image/*" capture="environment" style="display:none" onchange="handleImg(event)">
+        <div id="img-prev" style="display:none;margin-bottom:8px"><img id="prev-img" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover"></div>
+      </div>
+      <div id="fim-txt" style="display:none">
+        <textarea id="ftxt" rows="3" placeholder="e.g. 2 idlis with sambar and coconut chutney, glass of milk"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-g" style="flex:1" onclick="analyseFood()"><span id="ab-txt">✨ Analyse</span></button>
+        <button class="btn btn-o" style="width:auto;padding:10px 14px" onclick="closeLogger()">✕</button>
+      </div>
+      <div id="food-result" style="margin-top:8px"></div>
+    </div>
+  </div>
+  ${slotsHtml}`;
+}
+
+function buildMealCard(e,date,idx){
+  const rc={'great':'🟢','okay':'🟡','poor':'🔴','safe':'✅','caution':'⚠️','risky':'🚫'};
+  let flags='';
+  if(e.nonVegV)flags+=`<div class="flag-item">🚫 <strong>Non-veg on ${getFest()?'festival':'restricted'} day!</strong> Try paneer, dal, Greek yogurt, or eggs instead.</div>`;
+  if(e.thyConflict)flags+=`<div class="flag-item">⚠️ Logged before 7:45 AM — may interfere with Thyronorm absorption</div>`;
+  if(e.hasSoy)flags+=`<div class="flag-item">🦋 Thyroid caution: Contains soy product</div>`;
+  if(e.hasCruc)flags+=`<div class="flag-item">🦋 Thyroid caution: Raw cruciferous vegetable</div>`;
+  if(e.fattyLiver&&e.fattyLiver!=='safe')flags+=`<div class="flag-item">🫀 Fatty liver: ${(e.fattyLiverFlags||[]).join(', ')||'use caution'}</div>`;
+  if(e.highSugarLate)flags+=`<div class="flag-item">🔴 High sugar post-7 PM spikes insulin at your lowest activity window</div>`;
+  if(e.highNa)flags+=`<div class="flag-item">🧂 High sodium — may cause water retention (don't panic at tomorrow's scale)</div>`;
+  if(e.lateCoffee)flags+=`<div class="flag-item">⚠️ Do not drink coffee after 4 PM</div>`;
+  return `<div class="mc">
+    <div class="mc-head"><div><div class="mc-name">${e.mealName||'Meal'}</div><div class="mc-meta">Logged ${e.time||'?'}</div></div>
+    <button onclick="delFood('${date}',${idx});renderFood()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:2px 4px">×</button></div>
+    <div class="ng">
+      <div class="nb2"><div class="nb2-v">${e.calories||0}</div><div class="nb2-l">kcal</div></div>
+      <div class="nb2"><div class="nb2-v">${e.protein||0}g</div><div class="nb2-l">protein</div></div>
+      <div class="nb2"><div class="nb2-v">${e.carbs||0}g</div><div class="nb2-l">carbs</div></div>
+      <div class="nb2"><div class="nb2-v">${e.fat||0}g</div><div class="nb2-l">fat</div></div>
+      <div class="nb2"><div class="nb2-v">${e.fiber||0}g</div><div class="nb2-l">fiber</div></div>
+      <div class="nb2"><div class="nb2-v">${e.sodium||0}</div><div class="nb2-l">mg Na</div></div>
+    </div>
+    ${(e.muscleGain||e.fatLoss||e.fattyLiver||e.thyroid)?`<div class="ratings">
+      ${e.muscleGain?`<span class="rb">${rc[e.muscleGain]||'🟡'} Muscle</span>`:''}
+      ${e.fatLoss?`<span class="rb">${rc[e.fatLoss]||'🟡'} Fat Loss</span>`:''}
+      ${e.fattyLiver?`<span class="rb">${rc[e.fattyLiver]||'✅'} Liver</span>`:''}
+      ${e.thyroid?`<span class="rb">${rc[e.thyroid]||'✅'} Thyroid</span>`:''}
+    </div>`:''}
+    ${flags?`<div style="margin-top:4px">${flags}</div>`:''}
+    ${e.smartNudge?`<div class="nudge">💡 ${e.smartNudge}</div>`:''}
+  </div>`;
+}
+
+let _fim='img';
+function setFIM(m){_fim=m;document.getElementById('fim-img').style.display=m==='img'?'block':'none';document.getElementById('fim-txt').style.display=m==='txt'?'block':'none';document.getElementById('fi-img').className='chip'+(m==='img'?' on':'');document.getElementById('fi-txt').className='chip'+(m==='txt'?' on':'');}
+function openLogger(slot){selSlot=slot;const lbls={breakfast:'Breakfast',midmorning:'Mid-Morning Snack',lunch:'Lunch',evening:'Evening Snack',dinner:'Dinner'};document.getElementById('logger-slot-lbl').textContent=lbls[slot]||slot;const el=document.getElementById('food-logger');el.style.display='block';el.scrollIntoView({behavior:'smooth'});imgB64=null;document.getElementById('food-result').innerHTML='';document.getElementById('img-prev').style.display='none';const ft=document.getElementById('ftxt');if(ft)ft.value=''}
+function closeLogger(){document.getElementById('food-logger').style.display='none';imgB64=null}
+function handleImg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{imgB64=ev.target.result.split(',')[1];document.getElementById('prev-img').src=ev.target.result;document.getElementById('img-prev').style.display='block'};r.readAsDataURL(f)}
+function addWater(){const td=today();setWater(td,Math.min(getWater(td)+250,5000));renderFood()}
+
+async function analyseFood(){
+  const abt=document.getElementById('ab-txt'),res=document.getElementById('food-result');
+  const txt=document.getElementById('ftxt')?.value?.trim();
+  if(!imgB64&&!txt){res.innerHTML=`<div class="bn bn-r">Upload a photo or describe your meal first.</div>`;return}
+  abt.innerHTML=`<span class="sp"></span> Analysing...`;res.innerHTML='';
+  const h=nowH(),mac=macros();
+  const sys=`You are a precise nutrition analyst for Ajay (31M, hypothyroidism + fatty liver, body recomposition 82.5kg→70kg). Daily targets: ${calTarget()} kcal, 140g protein, ${mac.fat}g fat, ${mac.carb}g carbs, 30g fiber. Time: ${timeStr()} IST.
+Respond ONLY with valid JSON, no markdown:
+{"mealName":"","calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0,"sugar":0,"sodium":0,"muscleGain":"great|okay|poor","fatLoss":"great|okay|poor","fattyLiver":"safe|caution|risky","thyroid":"safe|caution|risky","isNonVeg":false,"hasSoy":false,"hasCruciferous":false,"hasHighSugar":false,"hasHighSodium":false,"hasCaffeine":false,"caffeineCount":0,"fattyLiverFlags":[],"thyroidFlags":[],"smartNudge":"one specific personalised coaching tip for Ajay based on this meal and time of day"}`;
+  let msgs;
+  if(imgB64)msgs=[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'Analyse this meal photo for Ajay. Return only JSON.'}]}];
+  else msgs=[{role:'user',content:`Analyse this meal for Ajay: "${txt}". Return only JSON.`}];
+  try{
+    const ak=getApiKey();
+    const hdrs={'Content-Type':'application/json','anthropic-version':'2023-06-01'};
+    if(ak){hdrs['x-api-key']=ak;hdrs['anthropic-dangerous-direct-browser-access']='true'}
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:hdrs,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:msgs})});
+    const d=await r.json();
+    const raw=(d.content?.find(c=>c.type==='text')?.text||'').replace(/```json|```/g,'').trim();
+    const json=JSON.parse(raw);
+    processFood(json);
+  }catch(err){console.error(err);showManualEntry(res)}
+  abt.innerHTML='✨ Analyse';
+}
+
+function processFood(j){
+  const h=nowH(),ts=timeStr();
+  const nonVegV=j.isNonVeg&&!isNVDay();
+  const thyConflict=h<8; // food before ~7:45 AM — flag absorption conflict
+  const highSugarLate=j.hasHighSugar&&h>=19;
+  const lateCoffee=j.hasCaffeine&&h>=16;
+  const entry={slot:selSlot,time:ts,mealName:j.mealName,calories:j.calories,protein:j.protein,carbs:j.carbs,fat:j.fat,fiber:j.fiber,sugar:j.sugar,sodium:j.sodium,muscleGain:j.muscleGain,fatLoss:j.fatLoss,fattyLiver:j.fattyLiver,thyroid:j.thyroid,isNonVeg:j.isNonVeg,hasSoy:j.hasSoy,hasCruc:j.hasCruciferous,hasHighSugar:j.hasHighSugar,highNa:j.hasHighSodium,caffeineCount:j.caffeineCount||0,fattyLiverFlags:j.fattyLiverFlags,smartNudge:j.smartNudge,nonVegV,thyConflict,highSugarLate,lateCoffee};
+  addFood(today(),entry);
+  document.getElementById('food-result').innerHTML=`<div class="bn bn-g">✅ ${j.mealName} logged — ${j.calories} kcal · ${j.protein}g protein</div>`;
+  setTimeout(()=>{closeLogger();renderFood();renderAlerts()},1400);
+}
+
+function showManualEntry(res){res.innerHTML=`<div class="bn bn-a" style="margin-bottom:8px">⚠️ AI unavailable. Enter manually:</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="ig"><label class="lbl">Meal Name</label><input type="text" id="mn" placeholder="Dal rice"></div>
+    <div class="ig"><label class="lbl">Calories</label><input type="number" id="mc" placeholder="350"></div>
+    <div class="ig"><label class="lbl">Protein g</label><input type="number" id="mp" placeholder="15"></div>
+    <div class="ig"><label class="lbl">Carbs g</label><input type="number" id="mcb" placeholder="50"></div>
+    <div class="ig"><label class="lbl">Fat g</label><input type="number" id="mf" placeholder="8"></div>
+    <div class="ig"><label class="lbl">Fiber g</label><input type="number" id="mfb" placeholder="5"></div>
+  </div>
+  <button class="btn btn-g" onclick="saveManual()">Save Meal</button>`}
+
+function saveManual(){const e={slot:selSlot,time:timeStr(),mealName:document.getElementById('mn')?.value||'Meal',calories:+document.getElementById('mc')?.value||0,protein:+document.getElementById('mp')?.value||0,carbs:+document.getElementById('mcb')?.value||0,fat:+document.getElementById('mf')?.value||0,fiber:+document.getElementById('mfb')?.value||0,sodium:0,caffeineCount:0,muscleGain:'okay',fatLoss:'okay',fattyLiver:'safe',thyroid:'safe',smartNudge:'',nonVegV:false,thyConflict:false};addFood(today(),e);closeLogger();renderFood();renderAlerts()}
+
+// ── EXERCISE TAB ──────────────────────────────────────────
+function renderExercise(){
+  const td=today(),wd=wday(),restDay=isRest(),ex=getEx(td);
+  const weekDates=getWeekDates();
+  const wkHtml=weekDates.map(({date,dayName})=>{
+    const e=getEx(date),isToday=date===td,isWknd=isWeekendDate(date);
+    let dc='dk',ct=dayName[0].toUpperCase();
+    if(isWknd){dc+=' rest';ct='😴'}else if(e&&e.type!=='rest'){dc+=' done';ct='✅'}
+    if(isToday)dc+=' tod';
+    return `<div class="wkd"><div class="${dc}">${ct}</div><div>${dayName.slice(0,3)}</div></div>`;
+  }).join('');
+  const doneCount=weekDates.filter(({date})=>!isWeekendDate(date)&&getEx(date)&&getEx(date).type!=='rest').length;
+
+  let html=`<div class="sl">This Week</div>
+  <div class="card"><div class="wk">${wkHtml}</div><div style="text-align:center;font-size:12px;color:var(--t2);padding-top:4px">${doneCount} / 5 sessions completed</div></div>
+  ${wd===5&&doneCount<5?`<div class="bn bn-a">⚠️ Only ${doneCount} of 5 sessions done. Today is Friday — last chance to hit your target!</div>`:''}`;
+
+  if(restDay){
+    html+=ex?`<div class="bn bn-g">😴 Rest day logged. Recovery days build the muscle you earned this week. Eat clean, sleep well, come back stronger Monday.</div>`:`<div class="card"><div class="bn bn-g" style="margin:0 0 10px">😴 Rest day — recovery is training too.</div><button class="btn btn-g" onclick="logRestDay()">✅ Mark Rest Day</button></div>`;
+  } else if(ex&&ex.type!=='rest'){
+    html+=`<div class="sl">Today's Session ✅</div>
+    <div class="card">
+      <div class="sr"><span class="sk">Type</span><span class="sv g">${ex.typeLabel||ex.type}</span></div>
+      <div class="sr"><span class="sk">Body parts</span><span class="sv">${(ex.bodyParts||[]).join(', ')||'—'}</span></div>
+      <div class="sr"><span class="sk">Duration</span><span class="sv">${ex.duration} min</span></div>
+      <div class="sr"><span class="sk">Intensity</span><span class="sv">${ex.intensity}</span></div>
+      ${ex.notes?`<div class="sr"><span class="sk">Notes</span><span class="sv" style="font-size:12px;color:var(--t2);text-align:right;max-width:60%">${ex.notes}</span></div>`:''}
+      <button class="btn btn-o" style="margin-top:10px;font-size:12px" onclick="delExercise()">🗑 Remove Session</button>
+    </div>`;
+  } else if(!restDay){
+    selBP=[];selExType='strength';selIntensity='Moderate';
+    html+=`<div class="sl">Log Workout</div>
+    <div class="card">
+      <div class="ig"><label class="lbl">Type</label><div class="chips">
+        <div class="chip on" onclick="selET('strength',this)">💪 Strength</div>
+        <div class="chip" onclick="selET('hiit',this)">🔥 HIIT</div>
+        <div class="chip" onclick="selET('boxing',this)">🥊 Boxing</div>
+        <div class="chip" onclick="selET('rest',this)">😴 Rest</div>
+      </div></div>
+      <div class="ig" id="bp-sec"><label class="lbl">Body Parts</label><div class="chips">
+        ${['Chest','Back','Legs','Shoulders','Arms','Abs','Full Body'].map(p=>`<div class="chip" onclick="toggleBP('${p}',this)">${p}</div>`).join('')}
+      </div></div>
+      <div class="ig"><label class="lbl">Duration: <span id="dur-v">45</span> min</label>
+        <input type="range" min="15" max="120" value="45" step="5" oninput="document.getElementById('dur-v').textContent=this.value" id="dur-sl">
+      </div>
+      <div class="ig"><label class="lbl">Intensity</label><div class="chips">
+        <div class="chip" onclick="selInten('Light',this)">🟢 Light</div>
+        <div class="chip on" onclick="selInten('Moderate',this)">🟡 Moderate</div>
+        <div class="chip" onclick="selInten('High',this)">🔴 High</div>
+      </div></div>
+      <div class="ig"><label class="lbl">Notes (optional)</label><input type="text" id="ex-notes" placeholder="e.g. PR on bench press, felt strong"></div>
+      <button class="btn btn-g" onclick="logEx()">💪 Log Workout</button>
+    </div>`;
+  }
+  document.getElementById('ex-content').innerHTML=html;
+}
+
+function selET(k,el){selExType=k;document.querySelectorAll('#ex-content .chips .chip').forEach(c=>{if(c.getAttribute('onclick')?.startsWith('selET'))c.classList.remove('on')});el.classList.add('on');const bp=document.getElementById('bp-sec');if(bp)bp.style.display=k==='rest'?'none':'block'}
+function selInten(v,el){selIntensity=v;document.querySelectorAll('#ex-content .chips .chip').forEach(c=>{if(c.getAttribute('onclick')?.startsWith('selInten'))c.classList.remove('on')});el.classList.add('on')}
+function toggleBP(p,el){el.classList.toggle('on');selBP=el.classList.contains('on')?[...selBP,p]:selBP.filter(x=>x!==p)}
+function logEx(){const dur=parseInt(document.getElementById('dur-sl')?.value||45),notes=document.getElementById('ex-notes')?.value||'';const tls={strength:'💪 Strength',hiit:'🔥 HIIT',boxing:'🥊 Boxing',rest:'😴 Rest'};setEx(today(),{type:selExType,typeLabel:tls[selExType],bodyParts:[...selBP],duration:dur,intensity:selIntensity,notes,time:timeStr()});selBP=[];renderExercise()}
+function logRestDay(){setEx(today(),{type:'rest',typeLabel:'😴 Rest Day'});renderExercise()}
+function delExercise(){setEx(today(),null);renderExercise()}
+function getWeekDates(){const n=ist(),d=n.getDay(),mon=new Date(n);mon.setDate(n.getDate()-(d===0?6:d-1));return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return{date:`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`,dayName:DAYS[x.getDay()]};})}
+function isWeekendDate(ds){const d=new Date(ds).getDay();return d===0||d===6}
+
+// ── SLEEP TAB ─────────────────────────────────────────────
+function renderSleep(){
+  const td=today(),log=getSleepLog(),entry=log.find(e=>e.date===td),last7=log.slice(-7);
+  const avg=last7.length?last7.reduce((s,e)=>s+e.hours,0)/last7.length:0;
+  let flag='';
+  if(entry){
+    if(entry.hours<6)flag=`<div class="bn bn-r">🚨 Critical: Under 6 hrs severely impacts thyroid hormone regulation. Thyronorm works less effectively with chronic sleep deprivation.</div>`;
+    else if(entry.hours<7)flag=`<div class="bn bn-a">🔴 Low sleep (${entry.hours.toFixed(1)}h) → elevated cortisol → harder fat loss + muscle breakdown. Target is 6.75h minimum.</div>`;
+    else flag=`<div class="bn bn-g">✅ Good sleep — ${entry.hours.toFixed(1)} hrs. Recovery optimised.</div>`;
+  }
+  let html=`<div class="sl">Log Sleep</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="ig"><label class="lbl">Bedtime</label><input type="time" id="sl-b" value="${entry?.bedtime||'22:45'}"></div>
+      <div class="ig"><label class="lbl">Wake time</label><input type="time" id="sl-w" value="${entry?.waketime||'05:30'}"></div>
+    </div>
+    <div class="ig"><label class="lbl">Or enter total hours directly</label><input type="number" id="sl-h" placeholder="6.75" step="0.25" value="${entry?.hours||''}"></div>
+    <div class="tip-box" style="margin-bottom:10px">Target: 10:45 PM → 5:30 AM = 6.75 hrs minimum</div>
+    <button class="btn btn-g" onclick="logSleep()">💤 Log Sleep</button>
+  </div>
+  ${flag}
+  <div class="sl">Sleep Stats</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="bm-box"><div class="bm-val" style="color:${avg>=6.75?'var(--accent)':'var(--warn)'}">${avg>0?avg.toFixed(1)+'h':'—'}</div><div class="bm-key">7-Day Avg</div><div class="bm-target">Target: 6.75h</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:${(entry?.hours||0)>=6.75?'var(--accent)':'var(--warn)'}">${entry?entry.hours.toFixed(1)+'h':'—'}</div><div class="bm-key">Last Night</div></div>
+    </div>
+    ${log.length>1?`<div class="cw"><canvas id="sl-chart"></canvas></div>`:`<div style="text-align:center;color:var(--t3);font-size:12px;padding:16px">Log a few nights to see your trend</div>`}
+  </div>`;
+  document.getElementById('sl-content').innerHTML=html;
+  if(log.length>1)setTimeout(()=>drawSleepChart(),50);
+}
+
+function logSleep(){const h=document.getElementById('sl-h')?.value,b=document.getElementById('sl-b')?.value,w=document.getElementById('sl-w')?.value;let hrs;if(h&&+h>0)hrs=Math.round(+h*4)/4;else if(b&&w){const[bh,bm]=b.split(':').map(Number),[wh,wm]=w.split(':').map(Number);let m=(wh*60+wm)-(bh*60+bm);if(m<0)m+=1440;hrs=Math.round(m/60*4)/4}else{alert('Enter sleep hours or bed/wake times');return}addSleep({date:today(),hours:hrs,bedtime:b||'',waketime:w||''});renderSleep()}
+function drawSleepChart(){
+  const c=document.getElementById('sl-chart');if(!c)return;
+  const l=getSleepLog().slice(-14);if(charts.sl)charts.sl.destroy();
+  charts.sl=new Chart(c,{type:'bar',data:{labels:l.map(e=>e.date.slice(5)),datasets:[{data:l.map(e=>e.hours),backgroundColor:l.map(e=>e.hours>=6.75?'rgba(0,200,150,.6)':e.hours>=6?'rgba(255,179,71,.6)':'rgba(255,107,107,.6)'),borderRadius:4,borderWidth:0},{type:'line',data:l.map(()=>6.75),borderColor:'rgba(0,200,150,.4)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#666',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},min:0,max:10}}}})
+}
+
+// ── DEBRIEF TAB ───────────────────────────────────────────
+function renderDebrief(){
+  const td=today(),mac=macros(),tot=dayTotals(td),ex=getEx(td);
+  const sleep=getSleepLog().find(e=>e.date===td)||getSleepLog().slice(-1)[0];
+  const thy=getThyronorm(),wl=getWtLog();
+  const latest=wl.length?wl[wl.length-1].weight:82.5;
+  const wklyLoss=wl.length>=7?calcWklyLoss(wl.slice(-14)):0;
+
+  const calS=tot.cal>0?(tot.cal>=mac.cal*.85&&tot.cal<=mac.cal*1.1?25:tot.cal>=mac.cal*.7?15:5):0;
+  const proS=tot.pro>=mac.pro*.9?25:tot.pro>=mac.pro*.7?15:tot.pro>=mac.pro*.5?8:0;
+  const nuS=calS+proS;
+  const exS=isRest()?30:(ex&&ex.type!=='rest'?30:0);
+  const slS=sleep?(sleep.hours>=6.75?20:sleep.hours>=6?12:4):0;
+  const total=nuS+exS+slS;
+  const sc=total>=80?'var(--accent)':total>=60?'var(--amber)':'var(--warn)';
+
+  document.getElementById('db-content').innerHTML=`
+  <div class="sl">Daily Score</div>
+  <div class="card" style="text-align:center;padding:20px 14px">
+    <div class="sc" style="border-color:${sc}"><div class="sc-n" style="color:${sc}">${total}</div><div class="sc-l">/ 100</div></div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:12px">${total>=90?'🏆 Outstanding day!':total>=75?'💪 Solid effort!':total>=60?'👍 Good — room to grow':'📈 Tomorrow is a fresh start'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div class="bm-box"><div class="bm-val" style="color:${nuS>=40?'var(--accent)':'var(--amber)'}">${nuS}</div><div class="bm-key">Nutrition /50</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:${exS>=25?'var(--accent)':'var(--amber)'}">${exS}</div><div class="bm-key">Exercise /30</div></div>
+      <div class="bm-box"><div class="bm-val" style="color:${slS>=15?'var(--accent)':'var(--amber)'}">${slS}</div><div class="bm-key">Sleep /20</div></div>
+    </div>
+  </div>
+  <div class="sl">Report Card</div>
+  <div class="card">
+    <div class="db-check"><div class="db-ic">💊</div><div class="db-text">Thyronorm taken today</div><div class="db-status">${thy?'✅':'❌'}</div></div>
+    <div class="db-check"><div class="db-ic">🍽️</div><div class="db-text">Calories: ${Math.round(tot.cal)} / ${mac.cal} kcal</div><div class="db-status">${calS>=20?'✅':'⚠️'}</div></div>
+    <div class="db-check"><div class="db-ic">🥩</div><div class="db-text">Protein: ${Math.round(tot.pro)} / ${mac.pro}g</div><div class="db-status">${proS>=20?'✅':'⚠️'}</div></div>
+    <div class="db-check"><div class="db-ic">🥗</div><div class="db-text">Fiber: ${Math.round(tot.fiber)} / ${mac.fiber}g</div><div class="db-status">${tot.fiber>=mac.fiber?'✅':tot.fiber>=mac.fiber*.7?'🟡':'⚠️'}</div></div>
+    <div class="db-check"><div class="db-ic">💪</div><div class="db-text">Workout: ${ex?ex.typeLabel||ex.type:'Not logged'}</div><div class="db-status">${exS>=25?'✅':isRest()?'😴':'❌'}</div></div>
+    <div class="db-check"><div class="db-ic">😴</div><div class="db-text">Sleep: ${sleep?sleep.hours.toFixed(1)+' hrs':'Not logged'}</div><div class="db-status">${slS>=15?'✅':'⚠️'}</div></div>
+  </div>
+  <div class="sl">Goal Progress</div>
+  <div class="card">
+    <div class="sr"><span class="sk">Current weight</span><span class="sv a">${latest} kg</span></div>
+    <div class="sr"><span class="sk">Gap to goal</span><span class="sv a">${(latest-70).toFixed(1)} kg remaining</span></div>
+    <div class="sr"><span class="sk">Est. weeks to 70 kg</span><span class="sv g">${wklyLoss>0?Math.ceil((latest-70)/wklyLoss)+' weeks':'Log more weight data'}</span></div>
+    <div class="sr"><span class="sk">Body fat</span><span class="sv">30.7% → 15% target</span></div>
+    ${wl.length>=4?'':`<div style="font-size:11px;color:var(--t3);padding-top:6px">📊 Log weight daily for accurate projection</div>`}
+  </div>
+  <div class="card">
+    <button class="btn btn-g" id="ai-db-btn" onclick="genAIDebrief()">✨ Get AI Coaching Report</button>
+    <div id="ai-db-res" style="margin-top:10px"></div>
+  </div>`;
+}
+
+async function genAIDebrief(){
+  const btn=document.getElementById('ai-db-btn'),res=document.getElementById('ai-db-res');
+  if(!btn||!res)return;btn.innerHTML=`<span class="sp"></span> Generating...`;btn.disabled=true;
+  const td=today(),mac=macros(),tot=dayTotals(td),ex=getEx(td);
+  const sleep=getSleepLog().find(e=>e.date===td)||getSleepLog().slice(-1)[0];
+  const thy=getThyronorm(),wl=getWtLog();
+  const latest=wl.length?wl[wl.length-1].weight:82.5;
+  const wklyLoss=wl.length>=7?calcWklyLoss(wl.slice(-14)):0;
+  const prompt=`You are Ajay's personal health coach. Ajay is a 31M with hypothyroidism (Thyronorm 62.5 mcg) + fatty liver, doing body recomposition (82.5→70kg, 30.7→15% body fat), fasted gym 5x/week strength training.
+Today (${DAYS[wday()]} ${td}):
+- Thyronorm taken: ${thy?'Yes':'No'}
+- Calories: ${Math.round(tot.cal)} / ${mac.cal} kcal
+- Protein: ${Math.round(tot.pro)}g / 140g | Carbs: ${Math.round(tot.carb)}g | Fat: ${Math.round(tot.fat)}g | Fiber: ${Math.round(tot.fiber)}g
+- Exercise: ${ex?JSON.stringify({type:ex.type,parts:ex.bodyParts,dur:ex.duration,intensity:ex.intensity}):'Not logged'}
+- Sleep: ${sleep?sleep.hours+' hrs last night':'Not logged'}
+- Weight: ${latest} kg (${(latest-70).toFixed(1)} kg to goal, rate: ${wklyLoss>0?wklyLoss.toFixed(2)+' kg/wk':'insufficient data'})
+Give a short specific coaching debrief under 90 words:
+✅ What went well: [specific]
+🔧 Improve tomorrow: [specific actionable]
+💡 Insight: [personalised based on his hypothyroidism/fatty liver/goals and today's data]`;
+  try{
+    const ak=getApiKey();const hdrs={'Content-Type':'application/json','anthropic-version':'2023-06-01'};
+    if(ak){hdrs['x-api-key']=ak;hdrs['anthropic-dangerous-direct-browser-access']='true'}
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:hdrs,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();const txt=d.content?.find(c=>c.type==='text')?.text||'No response.';
+    res.innerHTML=`<div class="tip-box" style="line-height:1.9">${txt.replace(/\n/g,'<br>')}</div>`;
+  }catch(e){res.innerHTML=`<div class="bn bn-a">AI coaching unavailable. Add your Anthropic API key in setup to enable this feature.</div>`}
+  btn.innerHTML='✨ Get AI Coaching Report';btn.disabled=false;
+}
+
+// ── INIT ──────────────────────────────────────────────────
+function init(){
+  updateTopBar();
+  renderAlerts();
+  renderWeight();
+  // Auto-refresh alerts every 5 min
+  setInterval(()=>{renderAlerts();updateTopBar()},300000);
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  if(lsg('setup_done',false)){
+    document.getElementById('setup').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  }
+});
+</script>
+</body>
+</html>
